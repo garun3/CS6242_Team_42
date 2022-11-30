@@ -1,0 +1,28 @@
+.rc-slider-track {
+    background-color: gray;
+}
+
+.rc-slider-dot-active {
+    border-color: gray;
+}
+
+.rc-slider-handle {
+    border: solid 2px gray;
+}
+
+.rc-slider-handle:hover {
+    border: solid 2px gray;
+    border-color: gray;
+}
+
+.rc-slider-handle:focus {
+    border-color: gray;
+}
+
+.rc-slider-handle-click-focused {
+    border-color: gray;;
+}
+
+.rc-slider-handle-click-focused:focus {
+    border-color: gray;
+}
