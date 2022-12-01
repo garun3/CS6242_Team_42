@@ -10,8 +10,10 @@ feature_map = {"Happiness_Score_Percentile" : "Happiness Rank",
                 'Social support' : 'Social Support',
                 'Healthy life expectancy at birth' : 'Life Expectancy',}
 
-df = pd.read_csv("all_data.csv")
+df = pd.read_csv("all_data_2.csv")
 df['Happiness_Score_Percentile'] = abs(df['Happiness_Score_Percentile'] - 10)
+df['Regression_Prediction'] = abs(df['Regression_Prediction'] - 10)
+df['Decision_Tree_Prediction'] = abs(df['Decision_Tree_Prediction'] - 10)
 df = df.drop(columns=['Life Expectancy'])
 df = df.rename(columns=feature_map)
 
@@ -73,7 +75,7 @@ app.layout = html.Div([
 def display_choropleth(feature, year):
     year = 2000 + int(year)
     dff = df[df['Year'] == year]
-    hover_data = {"Country" : False, "Happiness Rank" : True, "Social Support" : ":.3f", "Log GDP per capita" : ":.3f", "Life Expectancy" : ":.2f", "Freedom to make life choices" : ":.3f"}
+    hover_data = {"Country" : False, "Happiness Rank" : True, "Regression_Prediction" : True, "Decision_Tree_Prediction" : True, "Social Support" : ":.3f", "Log GDP per capita" : ":.3f", "Life Expectancy" : ":.2f", "Freedom to make life choices" : ":.3f"}
     fig = px.choropleth(dff, locations="Country",
                     color=feature, 
                     hover_name="Country",
