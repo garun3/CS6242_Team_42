@@ -44,13 +44,12 @@ app.layout = html.Div([
     html.Div(
         dbc.Row([ 
             dbc.Col([
-                dcc.Graph(id="graph")], width=8), # Main chloropleth map
-            dbc.Col(dcc.Graph(id="country-timeseries"), width=4, style={"margin-top":"28px"}) # Country time series graph
+                dcc.Graph(id="graph")]), # Main chloropleth map
         ])
     ),
     # Div for the feature label
     html.Div([
-        html.H3("Features", style={"text-align":"center", "margin-right":"80px"})
+        html.H3("Features", style={"text-align":"center"})
     ], style={"margin-top":"50px"}),
     # Div for the feature table and variance graph
     html.Div(
@@ -59,7 +58,7 @@ app.layout = html.Div([
             dbc.Col([
                 dbc.Table.from_dataframe(table, striped=True, bordered=True, size="sm") # Feature table
             ], width=7),
-            dbc.Col(html.P("Was thinking we could put feature explanatory variance graph here if we have a df for it. If not and a lot of work can scrap this area and add std, avg, etc to table."), width=5) # Place for putting explanatory variance graph. 
+            dbc.Col(dcc.Graph(id="country-timeseries"), width=5) # Country time series graph
         ]),
     ], style={"margin-top":"10px", "margin-right":"15px"})
 
@@ -97,25 +96,24 @@ def display_choropleth(feature, year):
 
 # time series graph helper function
 def create_timeseries(dff, feature, country, feature_range):
-    fig = px.scatter(dff, x="Year", y=feature)
+    fig = px.scatter(dff, x="Year", y=feature, color_discrete_sequence=['gray'])
     fig.update_traces(mode='lines+markers')
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(type='linear')
-    fig.update_layout(height=500, margin={'l': 0, 'b': 0, 'r': 60, 't': 35}, title_text=feature + " for " + country,  title_x=0.5, yaxis_range=feature_range)
+    fig.update_layout(height=500, margin={'l': 0, 'b': 0, 'r': 60, 't': 35}, title_text=feature + " for " + country,  title_x=0.5, yaxis_range=feature_range, plot_bgcolor="whitesmoke")
     return fig
 # time series graph callback
 @app.callback(
     Output("country-timeseries", "figure"), 
-    Input("graph", "hoverData"),
+    Input("graph", "clickData"),
     Input("feature", "value")
     )
-def update_timeseries(hoverData, feature):
+def update_timeseries(clickData, feature):
     country = "United States"
-    #print(hoverData)
-    if hoverData is not None:
-        country = hoverData["points"][0]["location"]
+    if clickData is not None:
+        country = clickData["points"][0]["location"]
     dff = df[df["Country"] == country]
     feature_range = (0, df[feature].max() * 1.03)
     return create_timeseries(dff, feature, country, feature_range)  
 
-app.run_server(debug=True)
+app.run_server(debug=False)
