@@ -3,14 +3,18 @@ from urllib.request import urlopen
 import pandas as pd
 import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
+import dash_bootstrap_components as dbc
 
-app = Dash(__name__)
+app = Dash(__name__, external_stylesheets=[dbc.themes.LUX])
 feature_map = {"Happiness_Score_Percentile" : "Happiness Rank",
                 'Social support' : 'Social Support',
                 'Healthy life expectancy at birth' : 'Life Expectancy',}
 
+df = pd.read_csv("all_data.csv")
+table = pd.read_csv("feature_description.csv")
+
 app.layout = html.Div([
-    html.H3('World Happiness Visualization', style={'marginTop': '10', 'marginBottom': '0'}),
+    html.H4('World Happiness Visualization', style={'marginTop': '10', 'marginBottom': '0'}),
     html.Div([
         html.Div([
             html.P("Select a feature to visualize:"),
@@ -31,40 +35,56 @@ app.layout = html.Div([
                 21: '2021',
                 }, value=13, id='year'),
         ], style={"width": "65%", 'float': 'right'}),
-    ], style={'width': '100%', 'height' : '100px'}),
-    dcc.Graph(id="graph"),
-    html.H4('Index:'),
-    html.P('Happiness Rank: Measured from 1 to 10, with 10 meaning a country is in the top 10% of countries for happiness'),
-    html.P('Social Support: Average of binary responses to the question "If you were in trouble, do you have relatives or friends you can count on to help you whenever you need them, or not?"'),
-    html.P('Log GDP per capita: GDP per capita on a log scale'),
-    html.P('Life Expectancy: Displayed in years'),
-    html.P('Freedom to make life choices: Average of binary responses to the question "Are you satisfied or dissatisfied with your freedom to choose what you do with your life?"')
-], style={"width": "100%", "height" : "100%"})
+    ], style={'width': '96%', 'height' : '100px'}),
+    # Div where the main graphs go
+    html.Div(
+        dbc.Row([ 
+            dbc.Col([
+                dcc.Graph(id="graph")], width=8), # Main chloropleth map
+            dbc.Col(dcc.Graph(id="country-timeseries"), width=4, style={"margin-top":"28px"}) # Country time series graph
+        ])
+    ),
+    # Div for the feature label
+    html.Div([
+        html.H3("Features", style={"text-align":"center", "margin-right":"80px"})
+    ], style={"margin-top":"50px"}),
+    # Div for the feature table and variance graph
+    html.Div(
+        [
+        dbc.Row([
+            dbc.Col([
+                dbc.Table.from_dataframe(table, striped=True, bordered=True, size="sm") # Feature table
+            ], width=7),
+            dbc.Col(html.P("Was thinking we could put feature explanatory variance graph here if we have a df for it. If not and a lot of work can scrap this area and add std, avg, etc to table."), width=5) # Place for putting explanatory variance graph. 
+        ]),
+    ], style={"margin-top":"10px"})
 
+], style={"width": "100%", "height" : "100%", "margin":"20px"}) # End layout div
+
+# chloropleth callback
 @app.callback(
     Output("graph", "figure"), 
     Input("feature", "value"),
     Input("year", "value")
 )
-
 def display_choropleth(feature, year):
     year = 2000 + int(year)
-    df = pd.read_csv("all_data.csv")
-    df = df[df['Year'] == year]
-    df['Happiness_Score_Percentile'] = abs(df['Happiness_Score_Percentile'] - 10)
-    df = df.drop(columns=['Life Expectancy'])
-    df = df.rename(columns=feature_map)
+    dff = df[df['Year'] == year]
+    dff['Happiness_Score_Percentile'] = abs(dff['Happiness_Score_Percentile'] - 10)
+    dff = dff.drop(columns=['Life Expectancy'])
+    dff = dff.rename(columns=feature_map)
     hover_data = {"Country" : False, "Happiness Rank" : True, "Social Support" : ":.3f", "Log GDP per capita" : ":.3f", "Life Expectancy" : ":.2f", "Freedom to make life choices" : ":.3f"}
-    fig = px.choropleth(df, locations="Country",
+    fig = px.choropleth(dff, locations="Country",
                     color=feature, 
                     hover_name="Country",
                     hover_data=hover_data,
                     color_continuous_scale='RdYlGn',
                     locationmode='country names',
                     projection='natural earth',
-                    scope ='world') 
+                    scope ='world',
+                    custom_data=["Country"]) 
     fig.update_layout(margin={"r" : 0, "t" : 10, "l" : 0, "b" : 0}, 
-                        autosize=False, width=1300, height=500,
+                        autosize=True, height=500,
                         coloraxis_colorbar=dict(
                         title=feature,
                         orientation='h'
@@ -74,5 +94,29 @@ def display_choropleth(feature, year):
     fig.update_geos(visible=False, showcountries=True, countrycolor="lightgray")
     return fig
 
+# time series graph helper function
+def create_timeseries(dff, feature, country):
+    fig = px.scatter(dff, x="Year", y=feature)
+    fig.update_traces(mode='lines+markers')
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(type='linear')
+    fig.update_layout(height=500, margin={'l': 0, 'b': 0, 'r': 60, 't': 35}, title_text=feature + " for " + country,  title_x=0.5)
+    return fig
+# time series graph callback
+@app.callback(
+    Output("country-timeseries", "figure"), 
+    Input("graph", "hoverData"),
+    Input("feature", "value")
+    )
+def update_timeseries(hoverData, feature):
+    country = "United States"
+    #print(hoverData)
+    if hoverData is not None:
+        country = hoverData["points"][0]["location"]
+    dff = df[df["Country"] == country]
+    dff['Happiness_Score_Percentile'] = abs(dff['Happiness_Score_Percentile'] - 10)
+    dff = dff.drop(columns=['Life Expectancy'])
+    dff = dff.rename(columns=feature_map)
+    return create_timeseries(dff, feature, country)  
 
-app.run_server(debug=False)
+app.run_server(debug=True)

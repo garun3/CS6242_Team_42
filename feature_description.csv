@@ -1,0 +1,6 @@
+Feature Name,Range,Description
+Happiness Rank,"[1, 10]","Measured from 1 to 10, with 10 meaning a country is in the top 10% of countries for happiness"
+Social Support,"[0.29, 0.99]","Average of binary responses to the question: “If you were in trouble, do you have relatives or friends you can count on to help you whenever you need them, or not?”"
+Log GDP per capita,"[5.527, 11.66]",GDP per capita on a log scale
+Life Expectancy,"[51.5, 84.61]",The expected lifetime in years for a country's resident. 
+Freedom to make life choices,"[0.30, 0.99]",Average of binary responses to the question: “Are you satisfied or dissatisfied with your freedom to choose what you do with your life?”
