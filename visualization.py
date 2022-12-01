@@ -11,6 +11,10 @@ feature_map = {"Happiness_Score_Percentile" : "Happiness Rank",
                 'Healthy life expectancy at birth' : 'Life Expectancy',}
 
 df = pd.read_csv("all_data.csv")
+df['Happiness_Score_Percentile'] = abs(df['Happiness_Score_Percentile'] - 10)
+df = df.drop(columns=['Life Expectancy'])
+df = df.rename(columns=feature_map)
+
 table = pd.read_csv("feature_description.csv")
 
 app.layout = html.Div([
@@ -57,7 +61,7 @@ app.layout = html.Div([
             ], width=7),
             dbc.Col(html.P("Was thinking we could put feature explanatory variance graph here if we have a df for it. If not and a lot of work can scrap this area and add std, avg, etc to table."), width=5) # Place for putting explanatory variance graph. 
         ]),
-    ], style={"margin-top":"10px"})
+    ], style={"margin-top":"10px", "margin-right":"15px"})
 
 ], style={"width": "100%", "height" : "100%", "margin":"20px"}) # End layout div
 
@@ -70,9 +74,6 @@ app.layout = html.Div([
 def display_choropleth(feature, year):
     year = 2000 + int(year)
     dff = df[df['Year'] == year]
-    dff['Happiness_Score_Percentile'] = abs(dff['Happiness_Score_Percentile'] - 10)
-    dff = dff.drop(columns=['Life Expectancy'])
-    dff = dff.rename(columns=feature_map)
     hover_data = {"Country" : False, "Happiness Rank" : True, "Social Support" : ":.3f", "Log GDP per capita" : ":.3f", "Life Expectancy" : ":.2f", "Freedom to make life choices" : ":.3f"}
     fig = px.choropleth(dff, locations="Country",
                     color=feature, 
@@ -95,12 +96,12 @@ def display_choropleth(feature, year):
     return fig
 
 # time series graph helper function
-def create_timeseries(dff, feature, country):
+def create_timeseries(dff, feature, country, feature_range):
     fig = px.scatter(dff, x="Year", y=feature)
     fig.update_traces(mode='lines+markers')
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(type='linear')
-    fig.update_layout(height=500, margin={'l': 0, 'b': 0, 'r': 60, 't': 35}, title_text=feature + " for " + country,  title_x=0.5)
+    fig.update_layout(height=500, margin={'l': 0, 'b': 0, 'r': 60, 't': 35}, title_text=feature + " for " + country,  title_x=0.5, yaxis_range=feature_range)
     return fig
 # time series graph callback
 @app.callback(
@@ -114,9 +115,7 @@ def update_timeseries(hoverData, feature):
     if hoverData is not None:
         country = hoverData["points"][0]["location"]
     dff = df[df["Country"] == country]
-    dff['Happiness_Score_Percentile'] = abs(dff['Happiness_Score_Percentile'] - 10)
-    dff = dff.drop(columns=['Life Expectancy'])
-    dff = dff.rename(columns=feature_map)
-    return create_timeseries(dff, feature, country)  
+    feature_range = (0, df[feature].max() * 1.03)
+    return create_timeseries(dff, feature, country, feature_range)  
 
 app.run_server(debug=True)
